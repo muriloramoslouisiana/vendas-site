@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 
-# 1. Configuração da página para ser LARGA
+# Configuração da página
 st.set_page_config(page_title="Louisiana - Vendas", layout="wide")
 
 def check_password():
@@ -12,7 +13,7 @@ def check_password():
     st.title("Acesso Restrito")
     password = st.text_input("Digite a senha:", type="password")
     if st.button("Entrar"):
-        if password == "123456": # Altere para sua senha
+        if password == "SUA_SENHA_AQUI": # Altere aqui
             st.session_state["password_correct"] = True
             st.rerun()
         else:
@@ -22,62 +23,65 @@ def check_password():
 if check_password():
     st.title("📊 Painel de Vendas - Louisiana")
 
-    # Link da sua planilha (ID já conferido)
     file_id = '1MR1jmDMEbI79c7j6cEsVvF2IFAYZPw8fXL5zg4iZyNU'
     url = f'https://docs.google.com/spreadsheets/d/{file_id}/export?format=csv'
 
-    @st.cache_data(ttl=600)
+    @st.cache_data(ttl=60) # Atualiza mais rápido (1 min) para teste
     def load_data():
-        # Lendo os dados diretamente
         df = pd.read_csv(url)
         
-        # Tratamento seguro da coluna Venda para não perder negativos nem decimais
-        if 'Venda' in df.columns:
-            # Se for texto, remove R$ e espaços. Se for número, o pandas já leu certo.
-            if df['Venda'].dtype == 'object':
-                df['Venda'] = df['Venda'].str.replace('R$', '', regex=False).str.strip()
-                # Só troca vírgula por ponto se a vírgula existir (formato brasileiro)
-                df['Venda'] = df['Venda'].str.replace(',', '.', regex=False)
+        # 1. Tenta encontrar a coluna 'Venda' mesmo se houver erro de maiúscula/minúscula
+        df.columns = [c.strip() for c in df.columns] # Remove espaços nos nomes das colunas
+        col_venda = next((c for c in df.columns if c.lower() == 'venda'), None)
+
+        if col_venda:
+            # Converte para string para limpar caracteres de moeda/formatação
+            df[col_venda] = df[col_venda].astype(str)
             
-            # Converte para número e mantém os negativos
-            df['Venda'] = pd.to_numeric(df['Venda'], errors='coerce')
+            # Limpeza: remove R$, remove pontos (separador de milhar), troca vírgula por ponto
+            df[col_venda] = (
+                df[col_venda]
+                .str.replace('R$', '', regex=False)
+                .str.replace(' ', '', regex=False)
+                .str.replace('.', '', regex=False) # Remove ponto de milhar: 1.000 -> 1000
+                .str.replace(',', '.', regex=False) # Troca vírgula decimal: 1000,50 -> 1000.50
+            )
             
-        return df
+            # Converte para número (o sinal de menos '-' é preservado automaticamente)
+            df[col_venda] = pd.to_numeric(df[col_venda], errors='coerce').fillna(0)
+        
+        return df, col_venda
 
     try:
-        data = load_data()
+        data, nome_coluna = load_data()
         
-        # Filtros na lateral
-        st.sidebar.header("Filtros")
-        vendedores = sorted(data["Vendedor"].dropna().unique())
-        vendedor_sel = st.sidebar.multiselect("Selecionar Vendedor", options=vendedores)
-        
-        df_filtered = data.copy()
-        if vendedor_sel:
-            df_filtered = df_filtered[df_filtered["Vendedor"].isin(vendedor_sel)]
+        if not nome_coluna:
+            st.error(f"Coluna 'Venda' não encontrada. Colunas disponíveis: {list(data.columns)}")
+        else:
+            # Filtros
+            st.sidebar.header("Filtros")
+            vendedores = sorted(data["Vendedor"].dropna().unique()) if "Vendedor" in data.columns else []
+            vendedor_sel = st.sidebar.multiselect("Selecionar Vendedor", options=vendedores)
+            
+            df_filtered = data.copy()
+            if vendedor_sel:
+                df_filtered = df_filtered[df_filtered["Vendedor"].isin(vendedor_sel)]
 
-        # --- MÉTRICAS ---
-        m1, m2, m3 = st.columns(3)
-        
-        # Total de linhas (vendas + trocas)
-        m1.metric("Qtd Itens", len(df_filtered))
-        
-        # Soma de vendas (considerando negativos)
-        total_venda = float(df_filtered['Venda'].sum())
-        m2.metric("Venda Líquida", f"R$ {total_venda:,.2f}")
-        
-        # Ticket médio das operações
-        ticket = total_venda / len(df_filtered) if len(df_filtered) > 0 else 0
-        m3.metric("Ticket Médio", f"R$ {ticket:,.2f}")
+            # Métricas
+            m1, m2 = st.columns(2)
+            m1.metric("Qtd Itens", len(df_filtered))
+            
+            total_venda = float(df_filtered[nome_coluna].sum())
+            m2.metric("Venda Líquida", f"R$ {total_venda:,.2f}")
 
-        # --- TABELA LARGA ---
-        st.write("### Detalhamento")
-        # Formatando a coluna Venda para aparecer com 2 casas decimais na tabela
-        st.dataframe(
-            df_filtered.style.format({"Venda": "{:.2f}"}, na_rep="-"), 
-            use_container_width=True, 
-            height=600
-        )
-        
+            # Tabela
+            st.write("### Detalhamento")
+            # Exibe a tabela formatando a coluna de venda corretamente
+            st.dataframe(
+                df_filtered.style.format({nome_coluna: "{:.2f}"}), 
+                use_container_width=True, 
+                height=600
+            )
+            
     except Exception as e:
-        st.error(f"Erro ao carregar dados: {e}")
+        st.error(f"Erro crítico: {e}")
