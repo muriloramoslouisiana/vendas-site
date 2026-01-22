@@ -1,19 +1,17 @@
 import streamlit as st
 import pandas as pd
 
-# Configuração simplificada de senha
+# Configuração de senha
 def check_password():
-    """Retorna True se o usuário inseriu a senha correta."""
     if "password_correct" not in st.session_state:
         st.session_state["password_correct"] = False
-
     if st.session_state["password_correct"]:
         return True
 
     st.title("Acesso Restrito")
-    password = st.text_input("Digite a senha para acessar os dados de vendas:", type="password")
+    password = st.text_input("Digite a senha:", type="password")
     if st.button("Entrar"):
-        if password == "123456": # Altere para a senha desejada
+        if password == "123456": # Ajuste sua senha aqui
             st.session_state["password_correct"] = True
             st.rerun()
         else:
@@ -23,38 +21,44 @@ def check_password():
 if check_password():
     st.title("📊 Painel de Vendas - Louisiana")
 
-    # Substitua pelo ID do seu arquivo no Google Drive
+    # ID correto que você extraiu
     file_id = '1MR1jmDMEbI79c7j6cEsVvF2IFAYZPw8fXL5zg4iZyNU'
     url = f'https://docs.google.com/spreadsheets/d/{file_id}/export?format=csv'
 
     @st.cache_data
     def load_data():
         df = pd.read_csv(url)
-        # Converte coluna de data se necessário
-        if 'Data' in df.columns:
-            df['Data'] = pd.to_datetime(df['Data'])
+        
+        # Converte a coluna Venda para número (remove R$ ou vírgulas se houver)
+        if 'Venda' in df.columns:
+            df['Venda'] = pd.to_numeric(df['Venda'], errors='coerce').fillna(0)
+            
         return df
 
     try:
         data = load_data()
         
-        # Filtros na barra lateral
+        # Filtros
         st.sidebar.header("Filtros")
-        vendedor = st.sidebar.multiselect("Selecionar Vendedor", options=data["Vendedor"].unique())
+        vendedores = data["Vendedor"].dropna().unique()
+        vendedor_sel = st.sidebar.multiselect("Selecionar Vendedor", options=vendedores)
         
         df_filtered = data.copy()
-        if vendedor:
-            df_filtered = df_filtered[df_filtered["Vendedor"].isin(vendedor)]
+        if vendedor_sel:
+            df_filtered = df_filtered[df_filtered["Vendedor"].isin(vendedor_sel)]
 
-        # Exibição de Métricas
+        # Métricas
         col1, col2 = st.columns(2)
         col1.metric("Total de Itens", len(df_filtered))
-        col2.metric("Venda Total (R$)", f"{df_filtered['Venda'].sum():,.2f}")
+        
+        # Aqui estava o erro: formatamos apenas se for número
+        total_vendas = float(df_filtered['Venda'].sum())
+        col2.metric("Venda Total", f"R$ {total_vendas:,.2f}")
 
         st.dataframe(df_filtered, use_container_width=True)
         
     except Exception as e:
-        st.error(f"Erro ao conectar com a planilha: {e}")
-        st.info("Certifique-se de que a planilha está com o link compartilhado para 'Qualquer pessoa com o link'.")
+        st.error(f"Erro ao processar dados: {e}")
+
 
 
