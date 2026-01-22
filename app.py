@@ -13,7 +13,7 @@ def check_password():
     st.title("Acesso Restrito")
     password = st.text_input("Digite a senha para acessar os dados de vendas:", type="password")
     if st.button("Entrar"):
-        if password == "SUA_SENHA_AQUI": # Altere para a senha desejada
+        if password == "123456": # Altere para a senha desejada
             st.session_state["password_correct"] = True
             st.rerun()
         else:
@@ -25,6 +25,7 @@ if check_password():
 
     # Substitua pelo ID do seu arquivo no Google Drive
     file_id = 'https://docs.google.com/spreadsheets/d/1bXorW_-a224wNiTK8Mnc_I8yAXloecqn/edit?usp=sharing&ouid=101741796619167215012&rtpof=true&sd=true'
+    Erro ao conectar com a planilha: HTTP Error 404: Not Found
     url = f'https://docs.google.com/spreadsheets/d/{file_id}/export?format=csv'
 
     @st.cache_data
@@ -55,4 +56,5 @@ if check_password():
         
     except Exception as e:
         st.error(f"Erro ao conectar com a planilha: {e}")
+
         st.info("Certifique-se de que a planilha está com o link compartilhado para 'Qualquer pessoa com o link'.")
