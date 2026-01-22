@@ -13,7 +13,7 @@ def check_password():
     st.title("Acesso Restrito")
     password = st.text_input("Digite a senha:", type="password")
     if st.button("Entrar"):
-        if password == "SUA_SENHA_AQUI": # Altere aqui
+        if password == "123456": # Altere aqui
             st.session_state["password_correct"] = True
             st.rerun()
         else:
@@ -85,3 +85,4 @@ if check_password():
             
     except Exception as e:
         st.error(f"Erro crítico: {e}")
+
