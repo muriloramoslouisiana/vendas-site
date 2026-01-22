@@ -24,7 +24,7 @@ if check_password():
     st.title("📊 Painel de Vendas - Louisiana")
 
     # Substitua pelo ID do seu arquivo no Google Drive
-    file_id = 'https://docs.google.com/spreadsheets/d/1MR1jmDMEbI79c7j6cEsVvF2IFAYZPw8fXL5zg4iZyNU/edit?usp=sharing'
+    file_id = '1MR1jmDMEbI79c7j6cEsVvF2IFAYZPw8fXL5zg4iZyNU'
     url = f'https://docs.google.com/spreadsheets/d/{file_id}/export?format=csv'
 
     @st.cache_data
@@ -56,4 +56,5 @@ if check_password():
     except Exception as e:
         st.error(f"Erro ao conectar com a planilha: {e}")
         st.info("Certifique-se de que a planilha está com o link compartilhado para 'Qualquer pessoa com o link'.")
+
 
