@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-
+st.set_page_config(layout="wide")
 # Configuração de senha
 def check_password():
     if "password_correct" not in st.session_state:
@@ -59,6 +59,7 @@ if check_password():
         
     except Exception as e:
         st.error(f"Erro ao processar dados: {e}")
+
 
 
 
