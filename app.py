@@ -58,3 +58,4 @@ if check_password():
         st.error(f"Erro ao conectar com a planilha: {e}")
 
         st.info("Certifique-se de que a planilha está com o link compartilhado para 'Qualquer pessoa com o link'.")
+
