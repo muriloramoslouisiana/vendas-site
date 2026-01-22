@@ -25,7 +25,6 @@ if check_password():
 
     # Substitua pelo ID do seu arquivo no Google Drive
     file_id = 'https://docs.google.com/spreadsheets/d/1bXorW_-a224wNiTK8Mnc_I8yAXloecqn/edit?usp=sharing&ouid=101741796619167215012&rtpof=true&sd=true'
-    Erro ao conectar com a planilha: HTTP Error 404: Not Found
     url = f'https://docs.google.com/spreadsheets/d/{file_id}/export?format=csv'
 
     @st.cache_data
@@ -56,6 +55,4 @@ if check_password():
         
     except Exception as e:
         st.error(f"Erro ao conectar com a planilha: {e}")
-
         st.info("Certifique-se de que a planilha está com o link compartilhado para 'Qualquer pessoa com o link'.")
-
